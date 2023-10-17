@@ -1,0 +1,15 @@
+Network.pro.user
+Client/Client.pro.user
+Server/Server.pro.user
+Client/.qmake.stash
+Server/.qmake.stash
+Client/Makefile
+Server/Makefile
+Client/Client
+Server/Server
+Client/*.o
+Server/*.o
+
+
+
+
