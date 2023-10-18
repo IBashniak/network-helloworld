@@ -9,7 +9,4 @@ Client/Client
 Server/Server
 Client/*.o
 Server/*.o
-
-
-
-
+.qmake.stash

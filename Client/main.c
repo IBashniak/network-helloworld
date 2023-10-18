@@ -8,19 +8,24 @@
 
 int main(int argc, char* argv[])
 {
-    int sockfd, portno, n;
+    int sockfd, portno, readSize;
     struct sockaddr_in serv_addr;
     struct hostent* server;
+    int tryAgain;
 
     char buffer[256];
 
-    if (argc < 3)
+    if (argc < 2)
     {
-        fprintf(stderr, "usage %s hostname port\n", argv[0]);
+        fprintf(stderr, "usage %s hostname. Set port in NET_PORT env var. 5002 is default port. \n", argv[0]);
         exit(0);
     }
 
-    portno = atoi(argv[2]);
+    char* port = getenv("NET_PORT");
+    if (port)
+        portno = atoi(port);
+    else
+        portno = 5002;
 
     /* Create a socket point */
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -32,7 +37,11 @@ int main(int argc, char* argv[])
     }
 
     server = gethostbyname(argv[1]);
-    printf("server: Official name of host. %s Length of address. %d\n", server->h_name, server->h_length);
+    printf("Client started. Connect to port %d. \n Official name of host. %s Length of address. %d\n type 'exit' to "
+           "quit\n",
+           portno,
+           server->h_name,
+           server->h_length);
 
     if (server == NULL)
     {
@@ -55,33 +64,43 @@ int main(int argc, char* argv[])
     /* Now ask for a message from the user, this message
       * will be read by server
    */
-
-    printf("Please enter the message: ");
-    bzero(buffer, 256);
-    fgets(buffer, 255, stdin);
-
-    /* Send message to the server */
-    n = write(sockfd, buffer, strlen(buffer));
-
-    if (n < 0)
+    tryAgain = 1;
+    do
     {
-        perror("ERROR writing to socket");
-        exit(1);
-    }
+        printf("Please enter the message: ");
+        bzero(buffer, 256);
+        fgets(buffer, 255, stdin);
+        tryAgain = strcmp("exit\n", buffer) != 0;
 
-    /* Now read server response */
-    bzero(buffer, 256);
-    n = read(sockfd, buffer, 255);
+        /* Send message to the server without last char (LF/CR) */
 
-    if (n < 0)
-    {
-        perror("ERROR reading from socket");
-        exit(1);
-    }
+        if (write(sockfd, buffer, strlen(buffer)-1)< 0)
+        {
+            perror("ERROR writing to socket");
+            exit(1);
+        }
+
+        /* Now read server response */
+        bzero(buffer, 256);
+        readSize = read(sockfd, buffer, 255);
+
+        if (readSize < 0)
+        {
+            perror("ERROR reading from socket");
+            exit(1);
+        }
+        else if (readSize == 0)
+        {
+            perror("Zero input from server");
+        }
+        printf("GOT message: |%s| message  size=%d\n", buffer, readSize);
+
+    } while (tryAgain);
+
     if (close(sockfd) == 0)
         printf("socket is closed\n");
     else
         perror("ERROR closing the socket");
-    printf("%s\n", buffer);
+
     return 0;
 }
